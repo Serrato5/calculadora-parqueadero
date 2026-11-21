@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Calculadora de parqueadero</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&display=swap" rel="stylesheet">
+<style>
+/*
+VOICE: claro y útil, como la caseta de un parqueadero bien llevado.
+IDEA: el tiquete de parqueadero impreso que te entregan a la salida.
+PICTURE: el tiquete grande con el total en vivo, junto a los controles.
+COLOUR and TYPE: azul señal de parqueo, blanco, amarillo de demarcación; Archivo ancho y pesado.
+LAYOUT: controles a la izquierda, tiquete a la derecha; en celular, tiquete arriba y controles abajo.
+*/
+:root{color-scheme:light dark;--bg:light-dark(#ffffff,#0b1626);--ink:light-dark(#0b1626,#eef3fa);--blue:#0a57c2;--blue-d:light-dark(#0a3f8f,#0a2a5c);--yel:#ffcc00;--mut:light-dark(#566275,#9fb0c6);--line:light-dark(#d9e1ec,#24364f);--paper:light-dark(#fffdf6,#f6f2e6);--pink:light-dark(#fff,#13233a)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 Archivo,system-ui,sans-serif;overflow-x:clip}
+.band{padding:clamp(28px,4vw,64px) max(5vw,16px)}
+.wrap{max-width:1240px;margin:0 auto}
+header.band{background:var(--blue);color:#fff;padding-bottom:clamp(20px,3vw,36px);position:relative}
+header.band::after{content:"";position:absolute;left:0;right:0;bottom:0;height:10px;background:repeating-linear-gradient(90deg,var(--yel) 0 48px,transparent 48px 72px)}
+.sign{display:flex;gap:18px;align-items:center}
+.p{flex:none;width:64px;height:64px;border-radius:12px;background:#fff;color:var(--blue);display:grid;place-items:center;font:900 46px/1 Archivo,system-ui,sans-serif;font-stretch:112%}
+h1{margin:0;font-size:clamp(32px,5vw,52px);line-height:1.05;font-weight:850;font-stretch:112%;text-wrap:balance}
+header p{margin:6px 0 0;max-width:62ch;opacity:.9}
+main .grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:clamp(24px,4vw,56px);align-items:start}
+@media(max-width:860px){main .grid{grid-template-columns:minmax(0,1fr)}.ticket-col{order:-1}}
+h2{font-size:22px;line-height:1.2;margin:0 0 14px;font-weight:800}
+.field{margin-bottom:26px}
+.label{display:block;font-weight:700;margin-bottom:10px}
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.seg button{min-height:64px;border:2px solid var(--line);background:var(--pink);color:var(--ink);border-radius:12px;font:700 17px Archivo,system-ui,sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px}
+.seg button svg{width:30px;height:30px}
+.seg button[aria-pressed=true]{border-color:var(--blue);background:var(--blue);color:#fff}
+.hours{display:flex;align-items:center;gap:12px}
+.hours button{flex:none;width:52px;height:52px;border-radius:12px;border:2px solid var(--line);background:var(--pink);color:var(--ink);font:800 24px Archivo,system-ui,sans-serif;cursor:pointer}
+.hours input[type=number]{width:100px;height:52px;text-align:center;font:800 24px Archivo,system-ui,sans-serif;border:2px solid var(--line);border-radius:12px;background:var(--pink);color:var(--ink)}
+input[type=range]{width:100%;margin-top:14px;accent-color:var(--blue);height:32px}
+.err{color:#c4161c;font-weight:700;min-height:1.5em;margin-top:8px}
+:root[data-theme=dark] .err{color:#ff7a7f}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]) .err{color:#ff7a7f}}
+button:focus-visible,input:focus-visible,summary:focus-visible{outline:3px solid var(--yel);outline-offset:2px}
+details.rates{border:2px solid var(--line);border-radius:12px;padding:0 16px}
+details.rates summary{cursor:pointer;font-weight:700;padding:14px 0;min-height:44px}
+.rgrid{display:grid;grid-template-columns:auto minmax(0,1fr) minmax(0,1fr);gap:10px 12px;align-items:center;padding-bottom:16px}
+.rgrid input{width:100%;height:44px;font:16px Archivo,system-ui,sans-serif;border:2px solid var(--line);border-radius:10px;padding:0 10px;background:var(--pink);color:var(--ink);text-align:right}
+.rgrid small{color:var(--mut);font-size:13px}
+.ticket{border-top:6px solid var(--yel);background:var(--paper);color:#1d1d1b;border-radius:6px;padding:28px clamp(20px,3vw,36px) 32px;box-shadow:0 18px 40px -18px rgba(10,30,70,.45),0 2px 0 rgba(0,0,0,.05);position:relative;font-stretch:100%;;}
+.thead{display:flex;justify-content:space-between;gap:12px;align-items:baseline;border-bottom:2px dashed #b9b3a2;padding-bottom:12px;margin-bottom:14px}
+.thead b{font-size:20px;font-weight:850;font-stretch:112%}
+.thead span{font-size:13px;color:#6b665a;white-space:nowrap}
+.veh{display:flex;align-items:center;gap:14px;margin-bottom:6px}
+.veh svg{width:min(150px,32vw);height:auto;flex:none}
+.tag{display:inline-block;padding:4px 10px;border-radius:999px;font-weight:700;font-size:14px;background:#e8eefb;color:var(--blue)}
+.tag.Media{background:#fff3c4;color:#7a5a00}.tag.Prolongada{background:#ffe0e0;color:#a3141a}
+.rows{margin:14px 0 0;padding:0;list-style:none}
+.rows li{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px dotted #cfc9b8}
+.rows li span:last-child{font-weight:700;white-space:nowrap;text-align:right;font-variant-numeric:tabular-nums}
+.strike{text-decoration:line-through;color:#8b8577}
+.total{margin-top:18px;display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap}
+.total small{display:block;font-size:14px;color:#6b665a;font-weight:600}
+.total output{font:900 clamp(44px,7vw,72px)/1 Archivo,system-ui,sans-serif;font-stretch:112%;font-variant-numeric:tabular-nums;white-space:nowrap;color:#0b1626}
+.cap{font-size:14px;font-weight:700;padding:6px 10px;border-radius:8px;background:var(--yel);color:#1d1d1b}
+.cap[hidden]{display:none}
+.meter{margin-top:16px}
+.meter .bar{height:12px;border-radius:6px;background:#e9e4d6;overflow:hidden}
+.meter .fill{height:100%;background:var(--blue);width:0;transition:width .35s ease}
+.meter .fill.full{background:#e0a800}
+.meter p{margin:6px 0 0;font-size:13px;color:#6b665a}
+.barcode{margin-top:22px;height:40px;background:repeating-linear-gradient(90deg,#1d1d1b 0 2px,transparent 2px 4px,#1d1d1b 4px 7px,transparent 7px 9px,#1d1d1b 9px 10px,transparent 10px 14px);opacity:.85}
+.code{background:var(--blue-d);color:#e9f0fb}
+.code h2{color:#fff}
+.code p{max-width:70ch;color:#c9d7ee}
+.code details{background:#06152b;border-radius:12px;margin-top:16px}
+.code summary{padding:14px 18px;cursor:pointer;font-weight:700;min-height:44px}
+.bar2{display:flex;justify-content:flex-end;padding:0 18px}
+.bar2 button{min-height:44px;padding:0 16px;border-radius:10px;border:0;background:var(--yel);color:#1d1d1b;font:700 15px Archivo,system-ui,sans-serif;cursor:pointer}
+pre{overflow-x:auto;margin:0;padding:14px 18px 20px;font:13.5px/1.55 ui-monospace,Consolas,monospace}
+.feat{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:18px;margin:22px 0 0;padding:0;list-style:none}
+.feat li{border-top:3px solid var(--yel);padding-top:10px;color:#dfe8f6}
+.feat b{display:block;color:#fff}
+footer{padding:22px max(5vw,16px);color:var(--mut);font-size:14px;border-top:1px solid var(--line)}
+@media(prefers-reduced-motion:reduce){.meter .fill{transition:none}}
+</style>
+</head>
+<body>
+<header class="band">
+  <div class="wrap sign">
+    <div class="p" aria-hidden="true">P</div>
+    <div>
+      <h1>Calculadora de parqueadero</h1>
+      <p>Calcula al instante cuánto se cobra por moto o carro según las horas: aplica el tope diario y clasifica la permanencia.</p>
+    </div>
+  </div>
+</header>
+
+<main class="band">
+  <div class="wrap grid">
+    <section aria-labelledby="h-datos">
+      <h2 id="h-datos">Datos de entrada</h2>
+      <div class="field">
+        <span class="label" id="l-tipo">Tipo de vehículo</span>
+        <div class="seg" role="group" aria-labelledby="l-tipo">
+          <button type="button" id="b-moto" aria-pressed="false" data-t="1">
+            <svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="27" r="6"/><circle cx="31" cy="27" r="6"/><path d="M9 27l8-11h7l7 11M17 16l-3-5h-4M24 16l3-4h5"/></svg>
+            Motocicleta
+          </button>
+          <button type="button" id="b-carro" aria-pressed="true" data-t="2">
+            <svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 26v-6l4-8h22l4 8v6z"/><circle cx="12" cy="27" r="3.5"/><circle cx="28" cy="27" r="3.5"/><path d="M9 19h22"/></svg>
+            Automóvil
+          </button>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="label" for="horas">Horas de permanencia (1 a 24)</label>
+        <div class="hours">
+          <button type="button" id="menos" aria-label="Restar una hora">−</button>
+          <input type="number" id="horas" inputmode="numeric" min="1" max="24" step="1" value="8">
+          <button type="button" id="mas" aria-label="Sumar una hora">+</button>
+        </div>
+        <input type="range" id="rango" min="1" max="24" step="1" value="8" aria-label="Horas con deslizador">
+        <div class="err" id="err" role="alert"></div>
+      </div>
+
+      <details class="rates">
+        <summary>Ajustar tarifas</summary>
+        <div class="rgrid">
+          <small></small><small>Por hora</small><small>Tope diario</small>
+          <span>Moto</span><input id="r1h" type="number" min="0" step="100" value="2000" aria-label="Tarifa por hora moto"><input id="r1m" type="number" min="0" step="100" value="12000" aria-label="Tope diario moto">
+          <span>Carro</span><input id="r2h" type="number" min="0" step="100" value="4000" aria-label="Tarifa por hora carro"><input id="r2m" type="number" min="0" step="100" value="24000" aria-label="Tope diario carro">
+        </div>
+      </details>
+    </section>
+
+    <section class="ticket-col" aria-labelledby="h-tiq">
+      <h2 id="h-tiq">Tiquete de salida</h2>
+      <div class="ticket" aria-live="polite">
+        <div class="thead"><b>PARQUEADERO</b><span id="fecha"></span></div>
+        <div class="veh">
+          <svg id="ilus" viewBox="0 0 150 80" aria-hidden="true"></svg>
+          <div><div id="t-veh" style="font-weight:800;font-size:20px">Automóvil</div><span class="tag" id="t-clas">Prolongada</span></div>
+        </div>
+        <ul class="rows">
+          <li><span>Horas</span><span id="t-h">8</span></li>
+          <li><span>Tarifa por hora</span><span id="t-tar">$4.000</span></li>
+          <li><span>Valor por horas</span><span id="t-val">$32.000</span></li>
+          <li><span>¿Se aplicó el tope diario?</span><span id="t-cap">Sí</span></li>
+        </ul>
+        <div class="total">
+          <div><small>Total a pagar</small><output id="t-tot">$24.000</output></div>
+          <span class="cap" id="t-ahorro">Ahorro $8.000</span>
+        </div>
+        <div class="meter">
+          <div class="bar"><div class="fill" id="fill"></div></div>
+          <p id="m-txt"></p>
+        </div>
+        <div class="barcode" aria-hidden="true"></div>
+      </div>
+    </section>
+  </div>
+</main>
+
+<section class="band code" aria-labelledby="h-code">
+  <div class="wrap">
+    <h2 id="h-code">Cómo funciona</h2>
+    <p>La lógica nació como un programa de consola en Python y luego la pasé a esta versión web. Las reglas son las mismas: valida los datos, calcula el valor por horas, aplica el tope diario y clasifica la permanencia.</p>
+    <ul class="feat">
+      <li><b>Validación</b>Rechaza tipos de vehículo inválidos, horas fuera de 1 a 24 y texto no numérico.</li>
+      <li><b>Tope diario</b>Si el valor por horas supera el máximo, solo se cobra el máximo.</li>
+      <li><b>Clasificación</b>1–2 h corta, 3–5 h media y 6–24 h prolongada.</li>
+    </ul>
+    <details>
+      <summary>Ver el código en Python</summary>
+      <div class="bar2"><button type="button" id="copiar">Copiar código</button></div>
+<pre><code id="py">tarifas = {1: ("Motocicleta", 2000, 12000),
+           2: ("Automóvil", 4000, 24000)}
+
+try:
+    tipo = int(input("Tipo de vehículo (1 moto, 2 carro): "))
+    horas = int(input("Horas de permanencia: "))
+except ValueError:
+    print("Error: ingrese números enteros.")
+else:
+    if tipo not in tarifas:
+        print("Error: tipo de vehículo inválido.")
+    elif not 1 &lt;= horas &lt;= 24:
+        print("Error: las horas deben estar entre 1 y 24.")
+    else:
+        vehiculo, tarifa, maximo = tarifas[tipo]
+        clasificacion = ("Corta" if horas &lt;= 2
+                         else "Media" if horas &lt;= 5
+                         else "Prolongada")
+        valor = horas * tarifa
+        total = min(valor, maximo)
+        print("Vehículo:", vehiculo)
+        print("Permanencia:", clasificacion)
+        print(f"Valor por horas: ${valor:,}")
+        print("Tope aplicado:", "Sí" if valor &gt; maximo else "No")
+        print(f"Total a pagar: ${total:,}")</code></pre>
+    </details>
+  </div>
+</section>
+
+<footer><div class="wrap">Proyecto de práctica en Python y JavaScript · Sebastián Serrato, Ingeniería Electrónica</div></footer>
+
+<script>
+{
+  const $ = id => document.getElementById(id);
+  const fmt = n => "$" + Math.round(n).toLocaleString("es-CO");
+  let tipo = 2;
+  const moto = '<g fill="none" stroke="#0a57c2" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><circle cx="32" cy="56" r="16" fill="#e8eefb"/><circle cx="118" cy="56" r="16" fill="#e8eefb"/><path d="M32 56l28-30h26l32 30M60 26l-8-12H40M86 26l10-10h14"/></g><ellipse cx="75" cy="76" rx="60" ry="3" fill="#0b1626" opacity=".12"/>';
+  const carro = '<g stroke="#0a57c2" stroke-width="4" stroke-linejoin="round"><path d="M10 58V44l18-24h70l22 24h18v14z" fill="#0a57c2"/><path d="M36 26h26v18H24zM70 26h24l16 18H70z" fill="#cfe0fb"/></g><circle cx="40" cy="60" r="12" fill="#1d1d1b"/><circle cx="40" cy="60" r="5" fill="#e9e4d6"/><circle cx="112" cy="60" r="12" fill="#1d1d1b"/><circle cx="112" cy="60" r="5" fill="#e9e4d6"/><ellipse cx="75" cy="76" rx="66" ry="3" fill="#0b1626" opacity=".12"/>';
+
+  const tarifas = () => ({
+    1: ["Motocicleta", +$("r1h").value || 0, +$("r1m").value || 0],
+    2: ["Automóvil", +$("r2h").value || 0, +$("r2m").value || 0]
+  });
+
+  function calc() {
+    const raw = $("horas").value.trim();
+    const h = Number(raw);
+    const ok = raw !== "" && Number.isInteger(h) && h >= 1 && h <= 24;
+    $("err").textContent = ok ? "" : "Error: las horas deben ser un número entero entre 1 y 24.";
+    document.querySelector(".ticket").style.opacity = ok ? 1 : .45;
+    if (!ok) return;
+    $("rango").value = h;
+    const [veh, tar, max] = tarifas()[tipo];
+    const clas = h <= 2 ? "Corta" : h <= 5 ? "Media" : "Prolongada";
+    const valor = h * tar;
+    const tope = valor > max;
+    const total = tope ? max : valor;
+    $("t-veh").textContent = veh;
+    $("t-clas").textContent = clas;
+    $("t-clas").className = "tag " + clas;
+    $("t-h").textContent = h + (h === 1 ? " hora" : " horas");
+    $("t-tar").textContent = fmt(tar);
+    $("t-val").textContent = fmt(valor);
+    $("t-val").className = tope ? "strike" : "";
+    $("t-cap").textContent = tope ? "Sí" : "No";
+    $("t-tot").textContent = fmt(total);
+    $("t-ahorro").hidden = !tope;
+    $("t-ahorro").textContent = "Ahorro " + fmt(valor - max);
+    $("ilus").innerHTML = tipo === 1 ? moto : carro;
+    const pct = max > 0 ? Math.min(100, valor / max * 100) : 0;
+    $("fill").style.width = pct + "%";
+    $("fill").className = "fill" + (pct >= 100 ? " full" : "");
+    $("m-txt").textContent = tope
+      ? "Llegó al tope diario de " + fmt(max) + "."
+      : "Va en " + Math.round(pct) + "% del tope diario de " + fmt(max) + ".";
+  }
+
+  function setTipo(t) {
+    tipo = t;
+    $("b-moto").setAttribute("aria-pressed", t === 1);
+    $("b-carro").setAttribute("aria-pressed", t === 2);
+    calc();
+  }
+  function setH(v) { $("horas").value = Math.max(1, Math.min(24, v)); calc(); }
+
+  $("b-moto").addEventListener("click", () => setTipo(1));
+  $("b-carro").addEventListener("click", () => setTipo(2));
+  $("menos").addEventListener("click", () => setH((parseInt($("horas").value) || 1) - 1));
+  $("mas").addEventListener("click", () => setH((parseInt($("horas").value) || 0) + 1));
+  $("rango").addEventListener("input", e => setH(+e.target.value));
+  $("horas").addEventListener("input", calc);
+  ["r1h", "r1m", "r2h", "r2m"].forEach(id => $(id).addEventListener("input", calc));
+  $("copiar").addEventListener("click", async () => {
+    try { await navigator.clipboard.writeText($("py").textContent); $("copiar").textContent = "¡Copiado!"; }
+    catch (e) { $("copiar").textContent = "Selecciona y copia"; }
+    setTimeout(() => $("copiar").textContent = "Copiar código", 1800);
+  });
+  $("fecha").textContent = new Date().toLocaleDateString("es-CO", { day: "2-digit", month: "short", year: "numeric" });
+  calc();
+}
+</script>
+</body>
+</html>
